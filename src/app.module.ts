@@ -14,10 +14,11 @@ import { throttlerOptions } from './config/throttler/throttler.config';
 import { KnexModule } from 'nestjs-knex';
 import { knexOptions } from './config/knex/knex.config';
 import { cacheOptions } from './config/redis/redis-cache-store.config';
+import { envOptions } from './utils';
 
 @Module({
 	imports: [
-		ConfigModule.forRoot(),
+		ConfigModule.forRoot({ envFilePath: envOptions }),
 		MorganModule,
 		ThrottlerModule.forRoot([throttlerOptions()]),
 		KnexModule.forRoot({ config: knexOptions() }),

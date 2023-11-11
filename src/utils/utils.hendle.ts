@@ -9,3 +9,5 @@ export const baseURL = () => {
 
 	return `http://localhost:${Number(process.env?.APP_PORT) || 3000}`;
 };
+
+export const envOptions = process.env.NODE_ENV?.toLowerCase().includes('test') ? '.env.testing' : '.env';
