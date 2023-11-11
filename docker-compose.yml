@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root@100
+      POSTGRES_DB: 'sped_db'
+    volumes:
+      - ./database/postgres:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+  redis:
+    image: redis/redis-stack
+    restart: always
+    volumes:
+      - ./database/redis:/data
+    ports:
+      - 6379:6379
+      - 9080:8001
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 9090:8080
+    depends_on:
+      - postgres
