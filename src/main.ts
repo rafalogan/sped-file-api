@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
 import { httpsOptions } from './config/https/https-options.confg';
@@ -16,9 +16,10 @@ async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { httpsOptions: httpsOptions() });
 
 	app.enableCors(corsOptions());
+	app.useGlobalPipes(new ValidationPipe());
 
-	await app.listen(Number(process.env.APP_PORT) || 3000);
 	await database.latest();
+	await app.listen(Number(process.env.APP_PORT) || 3000);
 	logger.log(`app started at ${baseURL()}`);
 }
 bootstrap();
