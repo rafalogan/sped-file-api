@@ -15,6 +15,7 @@ import { KnexModule } from 'nestjs-knex';
 import { knexOptions } from './config/knex/knex.config';
 import { cacheOptions } from './config/redis/redis-cache-store.config';
 import { envOptions } from './utils';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
 	imports: [
@@ -24,6 +25,7 @@ import { envOptions } from './utils';
 		KnexModule.forRoot({ config: knexOptions() }),
 		CacheModule.register(cacheOptions),
 		MailerModule.forRoot(mailerOptions()),
+		AuthModule,
 	],
 	controllers: [AppController],
 	providers: [AppService, morganPrvider],
