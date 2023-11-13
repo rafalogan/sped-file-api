@@ -22,7 +22,7 @@ export const onInfo = (title: string, ...args: any[]) => {
 	return logger.log(args[0], ...args.slice(1));
 };
 
-export const onError = (title: string, args: any[]) => {
+export const onError = (title: string, ...args: any[]) => {
 	const logger = new Logger(title);
-	return logger.error(args[0], ...args.slice());
+	return logger.error(args[0], ...args.slice(1));
 };
