@@ -4,6 +4,7 @@ import { onError, onInfo } from 'src/utils';
 export class DataBaseConfig {
 	private readonly conn: Knex;
 	constructor(private config: Knex.Config) {
+		this.config.migrations.loadExtensions = ['.js'];
 		this.conn = knex(this.config);
 	}
 
@@ -11,7 +12,7 @@ export class DataBaseConfig {
 		try {
 			const isConnected = await this.conn.raw('SELECT 1+1 AS result');
 
-			onInfo(DataBaseConfig.name, `Data base is connected to ${isConnected}`);
+			onInfo(DataBaseConfig.name, `Data base is connected: ${!!isConnected.rowCount}`);
 		} catch (err) {
 			return onError(DataBaseConfig.name, 'Data base is not connected', err);
 		}

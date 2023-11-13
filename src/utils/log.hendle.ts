@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { isDev } from './utils.hendle';
+import { error } from 'console';
 
 const enableDebug = process.env.DEBUG === 'true';
 
@@ -23,6 +24,8 @@ export const onInfo = (title: string, ...args: any[]) => {
 };
 
 export const onError = (title: string, ...args: any[]) => {
+	error(args[0], ...args.slice(1));
+
 	const logger = new Logger(title);
 	return logger.error(args[0], ...args.slice(1));
 };
