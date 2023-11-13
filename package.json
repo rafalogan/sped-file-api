@@ -18,6 +18,8 @@
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
+		"db:up": "docker-compose down && docker-compose up",
+		"db:down": "docker-compose down",
 		"knex:migrate:make": "npx knex migrate:make --knexfile knexfile.ts -x ts",
 		"knex:migrate:latest": "npx knex migrate:latest --knexfile knexfile.ts",
 		"knex:migrate:rollback": "npx knex migrate:rollback --knexfile knexfile.ts",
