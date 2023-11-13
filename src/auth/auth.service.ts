@@ -19,6 +19,7 @@ import { UserViewModel } from 'src/user/repository/user-view.model';
 import { compare } from 'bcrypt';
 import { convertDataValues, hashString, onError } from 'src/utils';
 import { AuthSignupDTO } from './dto/auth-signup.dto';
+import { AuthRecoveryDTO } from './dto/auth-recovery.dto';
 
 @Injectable()
 export class AuthService {
@@ -110,6 +111,8 @@ export class AuthService {
 			return err;
 		}
 	}
+
+	async recovery(data: AuthRecoveryDTO) {}
 
 	private async generateToken(user: UserViewModel) {
 		Reflect.deleteProperty(user, 'password');
