@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ForbiddenException,
+	Injectable,
+	InternalServerErrorException,
+	NotFoundException,
+	UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Knex } from 'knex';
 
@@ -16,7 +23,7 @@ import { AuthSignupDTO } from './dto/auth-signup.dto';
 @Injectable()
 export class AuthService {
 	private authentication = { audience: 'signin', issuer: 'user' };
-	private recoveryOptions = { audience: 'recovery', issuer: 'user' };
+	private recoveryOptions = { audience: 'recovery', issuer: 'forget' };
 
 	constructor(
 		@InjectKnex() private readonly conn: Knex,
@@ -35,23 +42,7 @@ export class AuthService {
 	async signin(credentials: AuthSiginDTO) {
 		const { email, password } = credentials;
 
-		const fromDB = await this.conn({ u: 'user', p: 'profiles' })
-			.select(
-				{
-					id: 'u.id',
-					name: 'u.name',
-					cpf: 'u.cpf',
-					email: 'u.email',
-					phone: 'u.phone',
-					password: 'u.password',
-					profile_id: 'u.profile_id',
-					active: 'u.active',
-				},
-				{ profile: 'p.profile' },
-			)
-			.where('u.email', email)
-			.andWhereRaw('p.id = u.profile_id')
-			.first();
+		const fromDB = await this.findOneByEmail(email);
 
 		existsOrError(fromDB, new UnauthorizedException('user unauthorized. verify your email or password and try aigate again'));
 		existsOrError(!!fromDB?.active, new UnauthorizedException('User Unauthorized!'));
@@ -59,7 +50,7 @@ export class AuthService {
 		const isMatch = await compare(password, fromDB?.password);
 		existsOrError(isMatch, new UnauthorizedException('user unauthorized. verify your email or password and try aigate again'));
 
-		return this.generateToken(new UserViewModel(convertDataValues(fromDB, 'camel')));
+		return this.generateToken(new UserViewModel(fromDB));
 	}
 
 	async signup(user: AuthSignupDTO) {
@@ -77,7 +68,43 @@ export class AuthService {
 			existsOrError(Number(id), new InternalServerErrorException(id));
 			await this.saveRules(id, user.rules);
 
-			return this.signin({ email: user.email, password: user.password });
+			const payload = await this.findOneByEmail(user.email);
+
+			return this.generateToken(new UserViewModel(payload));
+		} catch (err: any) {
+			onError(AuthService.name, err);
+			return err;
+		}
+	}
+
+	async forget(email: string) {
+		try {
+			const fromDB = await this.findOneByEmail(email);
+
+			existsOrError(fromDB, new NotFoundException('user email not found'));
+
+			const { id, name } = fromDB;
+
+			const token = this.jwtService.sign(
+				{ id, email },
+				{
+					expiresIn: '30 minutes',
+					subject: String(id),
+					...this.recoveryOptions,
+				},
+			);
+
+			await this.mailerService.sendMail({
+				subject: 'Recuperar Senha',
+				to: email,
+				template: 'forget',
+				context: { name, token },
+			});
+
+			return {
+				message: 'email to recovery password send',
+				data: { name, email, token },
+			};
 		} catch (err: any) {
 			onError(AuthService.name, err);
 			return err;
@@ -88,7 +115,14 @@ export class AuthService {
 		Reflect.deleteProperty(user, 'password');
 		Reflect.deleteProperty(user, 'active');
 
-		const accessToken = this.jwtService.sign({ ...user }, { expiresIn: '1 day', ...this.authentication });
+		const accessToken = this.jwtService.sign(
+			{ ...user },
+			{
+				expiresIn: '1 day',
+				subject: String(user.id),
+				...this.authentication,
+			},
+		);
 
 		return { ...user, accessToken };
 	}
@@ -101,6 +135,42 @@ export class AuthService {
 		} catch (err: any) {
 			onError(AuthService.name, err);
 			throw new InternalServerErrorException(err);
+		}
+	}
+
+	private async findOneByEmail(email: string) {
+		try {
+			const fromDB = await this.conn({ u: 'user', p: 'profiles' })
+				.select(
+					{
+						id: 'u.id',
+						name: 'u.name',
+						cpf: 'u.cpf',
+						email: 'u.email',
+						phone: 'u.phone',
+						password: 'u.password',
+						profile_id: 'u.profile_id',
+						active: 'u.active',
+					},
+					{ profile: 'p.profile' },
+				)
+				.where('u.email', email)
+				.andWhereRaw('p.id = u.profile_id')
+				.first();
+
+			if (!fromDB) {
+				return fromDB;
+			}
+
+			const rules = await this.conn({ ur: 'users_rules', r: 'rules' })
+				.select({ id: 'r.id', rule: 'r.rule', key: 'r.key' })
+				.where('ur.user_id', fromDB?.id)
+				.andWhereRaw('r.id = ur.rule_id');
+
+			return convertDataValues({ ...fromDB, rules }, 'camel');
+		} catch (err: any) {
+			onError(AuthService.name, err);
+			return err;
 		}
 	}
 }
