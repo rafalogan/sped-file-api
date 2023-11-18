@@ -30,7 +30,7 @@ export class AuthService {
 		@InjectKnex() private readonly conn: Knex,
 		private readonly jwtService: JwtService,
 		private readonly mailerService: MailerService,
-	) { }
+	) {}
 
 	varifyToken(token: string) {
 		try {
