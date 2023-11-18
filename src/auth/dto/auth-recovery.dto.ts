@@ -1,9 +1,9 @@
-import { IsEmail, IsJWT } from 'class-validator';
+import { IsEmail, IsJWT, IsStrongPassword } from 'class-validator';
 
 export class AuthRecoveryDTO {
-	@IsEmail()
-	email: string;
-
 	@IsJWT()
 	token: string;
+
+	@IsStrongPassword({ minLength: 6 })
+	password: string;
 }

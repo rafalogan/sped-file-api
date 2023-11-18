@@ -9,10 +9,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Knex } from 'knex';
 
-import { MailerService } from '@nestjs-modules/mailer';
 import { InjectKnex } from 'nestjs-knex';
+
+import { MailerService } from '@nestjs-modules/mailer';
 import { AuthSiginDTO } from './dto/auth-signin.dto';
-import { async } from 'rxjs';
 import { UserEntity } from 'src/user/repository/user.entity';
 import { existsOrError, notExistisOrError } from 'src/utils/validate.handle';
 import { UserViewModel } from 'src/user/repository/user-view.model';
@@ -30,7 +30,7 @@ export class AuthService {
 		@InjectKnex() private readonly conn: Knex,
 		private readonly jwtService: JwtService,
 		private readonly mailerService: MailerService,
-	) {}
+	) { }
 
 	varifyToken(token: string) {
 		try {
@@ -112,7 +112,16 @@ export class AuthService {
 		}
 	}
 
-	async recovery(data: AuthRecoveryDTO) {}
+	async recovery(data: AuthRecoveryDTO) {
+		const { token, password: newPass } = data;
+		const { email } = this.jwtService.verify(token, this.recoveryOptions);
+		const password = await hashString(newPass);
+
+		await this.conn('users').update(convertDataValues({ password })).where({ email });
+		const fromDB = await this.findOneByEmail(email);
+
+		return this.generateToken(new UserViewModel(fromDB));
+	}
 
 	private async generateToken(user: UserViewModel) {
 		Reflect.deleteProperty(user, 'password');
